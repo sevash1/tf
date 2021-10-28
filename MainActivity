@@ -1,0 +1,127 @@
+package sevash.tesla_forum;
+
+import android.app.*;
+import android.os.*;
+import android.webkit.*;
+import java.io.*;
+import javax.net.ssl.*;
+import java.net.*;
+import android.widget.*;
+import android.view.View.*;
+import android.widget.RelativeLayout.*;
+import android.view.*;
+import android.content.*;
+import android.net.*;
+import android.webkit.WebChromeClient.*;
+
+
+
+public class MainActivity extends Activity
+{
+	WebView webView; 
+	RelativeLayout lay;
+	Context context;
+	private ValueCallback<Uri[]> mUploadMessage;
+	LayoutParams params=new LayoutParams(LayoutParams.MATCH_PARENT,LayoutParams.MATCH_PARENT);
+	
+    @Override
+    protected void onCreate(Bundle savedInstanceState)
+    {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.main);
+		lay=findViewById(R.id.lay);
+		context=this;
+		runOnUiThread(run);
+		
+    }
+	@Override
+	public void onBackPressed() {
+		
+		webView.goBack();
+		
+		
+	}
+	
+	
+	
+	@Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
+
+        
+        if (requestCode == 1) {
+
+            if (null == mUploadMessage || intent == null || resultCode != RESULT_OK) {
+                return;
+            }
+
+            Uri[] result = null;
+            String dataString = intent.getDataString();
+
+            if (dataString != null) {
+                result = new Uri[]{ Uri.parse(dataString) };
+            }
+
+            mUploadMessage.onReceiveValue(result);
+            mUploadMessage = null;
+        }
+    }
+	
+	
+	
+	Runnable run=new Runnable(){
+
+		@Override
+		public void run()
+		{
+			
+			webView = new WebView(context);
+			webView.getSettings().setJavaScriptEnabled(true);
+			webView.getSettings().setAppCacheEnabled(true); 
+			webView.getSettings().setDatabaseEnabled(true); 
+			webView.getSettings().setDomStorageEnabled(true);
+			webView.getSettings().setLoadsImagesAutomatically(true);
+			webView.getSettings().setJavaScriptCanOpenWindowsAutomatically(true); 
+			webView.setWebChromeClient(new MyWebChromeClient());
+			webView.setWebViewClient(new MyWebViewClient());
+			webView.loadUrl("https://teslacraft.org/forums/");
+		
+			lay.addView(webView,params);
+			}
+
+		
+	};
+	
+	
+	private class MyWebViewClient extends WebViewClient {
+
+        @Override
+        public boolean shouldOverrideUrlLoading(WebView view, String url) {
+            view.loadUrl(url);
+            return true;
+        }
+    }
+	
+	private class MyWebChromeClient extends WebChromeClient {
+
+        @Override
+        public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
+
+            if (mUploadMessage != null) {
+                mUploadMessage.onReceiveValue(null);
+            }
+
+            mUploadMessage = filePathCallback;
+
+            Intent i = new Intent(Intent.ACTION_GET_CONTENT);
+            i.addCategory(Intent.CATEGORY_OPENABLE);
+            i.setType("*/*"); 
+
+            MainActivity.this.startActivityForResult(Intent.createChooser(i, "File Chooser"), 1 );
+
+            return true;
+        }
+    }
+	
+	
+}
+
